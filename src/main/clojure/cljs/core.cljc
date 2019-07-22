@@ -614,12 +614,16 @@
             (seq ret)))
         (core/list (asig fdecl))))))
 
+(core/defn- bool-expr [e]
+  (vary-meta e assoc :tag 'boolean))
+
 (core/defmacro defonce
   "defs name to have the root value of init iff the named var has no root value,
   else init is unevaluated"
   [x init]
-  `(when-not (exists? ~x)
-     (def ~x ~init)))
+  (core/let [expr (bool-expr `(~'js* "!(~{}) || !(~{})" goog.DEBUG (exists? ~x)))]
+    `(when ~expr
+       (def ~x ~init))))
 
 (core/defn destructure [bindings]
   (core/let [bents (partition 2 bindings)
@@ -855,9 +859,6 @@
                             (interpose ",")
                             (apply core/str))]
      (string-expr (list* 'js* (core/str "[" strs "].join('')") x ys)))))
-
-(core/defn- bool-expr [e]
-  (vary-meta e assoc :tag 'boolean))
 
 (core/defn- simple-test-expr? [env ast]
   (core/and
